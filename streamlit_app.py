@@ -1,50 +1,46 @@
 import streamlit as st
 import pandas as pd
 import random
-import time
 
+# -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="Benefits Choice Coach", page_icon="💬", layout="wide")
 
-# ---- CUSTOM STYLES ----
+# -------------------- CUSTOM CSS --------------------
 st.markdown("""
     <style>
-    /* --- GLOBAL --- */
     body {
-        background: linear-gradient(120deg, #f7f9fc, #ffffff);
-        color: #1a1a1a;
+        background: linear-gradient(120deg, #f6f9fc, #ffffff);
         font-family: 'Segoe UI', sans-serif;
     }
     .main {
+        background: #ffffffcc;
         padding: 2rem 4rem;
-        background: #ffffffaa;
         border-radius: 20px;
         box-shadow: 0 4px 25px rgba(0,0,0,0.08);
-        backdrop-filter: blur(5px);
+        backdrop-filter: blur(8px);
     }
     h1, h2, h3 {
-        color: #1b3556;
+        color: #15395b;
     }
     .stButton>button {
-        background: linear-gradient(90deg, #002b5c, #0072bb);
+        background: linear-gradient(90deg, #003366, #0072bb);
         color: white;
         border-radius: 10px;
-        padding: 10px 25px;
         border: none;
+        padding: 0.6rem 1.2rem;
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
         transform: scale(1.05);
         background: linear-gradient(90deg, #0072bb, #0094d4);
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
     }
-    /* --- CHAT BOX --- */
     .chat-bubble-user {
-        background: #eaf4ff;
+        background: #e9f3ff;
         border-radius: 15px;
         padding: 10px 15px;
         margin: 8px 0;
         max-width: 80%;
-        animation: fadeIn 0.8s;
+        animation: fadeIn 0.5s;
     }
     .chat-bubble-bot {
         background: #fff7e6;
@@ -53,115 +49,80 @@ st.markdown("""
         padding: 10px 15px;
         margin: 8px 0;
         max-width: 85%;
-        animation: fadeIn 1s;
+        animation: fadeIn 0.5s;
     }
     @keyframes fadeIn {
         from {opacity: 0; transform: translateY(10px);}
         to {opacity: 1; transform: translateY(0);}
     }
-    /* --- SIDEBAR --- */
     [data-testid="stSidebar"] {
         background-color: #0d294d;
         color: #ffffff;
     }
-    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
+    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] label {
         color: #ffffff !important;
-    }
-    [data-testid="stSidebar"] input, [data-testid="stSidebar"] select {
-        border-radius: 8px;
-        border: none;
-        padding: 6px;
-    }
-    /* --- EXPANDER --- */
-    .streamlit-expanderHeader {
-        background-color: #f0f3fa;
-        font-weight: bold;
-        border-radius: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ---- OPTIONAL JAVASCRIPT EFFECTS ----
-st.markdown("""
-    <script>
-    const fadeIn = (el, time) => {
-        el.style.opacity = 0;
-        let last = +new Date();
-        const tick = () => {
-            el.style.opacity = +el.style.opacity + (new Date() - last) / time;
-            last = +new Date();
-            if (+el.style.opacity < 1) {
-                requestAnimationFrame(tick);
-            }
-        };
-        tick();
-    };
-
-    window.addEventListener('load', () => {
-        document.querySelectorAll('.chat-bubble-bot, .chat-bubble-user').forEach(el => fadeIn(el, 1000));
-    });
-    </script>
-""", unsafe_allow_html=True)
-
-# ---- HEADER ----
+# -------------------- APP HEADER --------------------
 st.title("💬 Benefits Choice Coach")
-st.markdown("<h4>✨ Your AI-powered HR Benefits Advisor</h4>", unsafe_allow_html=True)
-st.write("Simplify benefits enrollment with personalized guidance and cost simulations.")
+st.markdown("### ✨ Your Personal AI Advisor for HR Benefits")
+st.write("Helping you choose the right health, life, and insurance plan — stress-free.")
 
-# ---- SIDEBAR ----
+# -------------------- SIDEBAR --------------------
 st.sidebar.header("🧍 Employee Profile")
 age = st.sidebar.slider("Age", 18, 65, 30)
 family = st.sidebar.selectbox("Family Status", ["Single", "Married", "With Children"])
-risk = st.sidebar.select_slider("Risk Tolerance", options=["Low", "Medium", "High"])
-income = st.sidebar.number_input("Monthly Income (USD)", 2000, 20000, 5000)
+risk = st.sidebar.select_slider("Risk Tolerance", ["Low", "Medium", "High"], value="Medium")
+income = st.sidebar.number_input("Monthly Income (USD)", 2000, 20000, 5000, step=100)
 st.sidebar.markdown("---")
 
-user_profile = {
-    "Age": age,
-    "Family": family,
-    "Risk": risk,
-    "Income": income
-}
-
-# ---- CHATBOT ----
-st.subheader("🤖 Chat with Your Benefits Coach")
+# -------------------- CHATBOT SECTION --------------------
+st.subheader("🤖 Chat with Benefits Coach")
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "bot", "text": "Hello 👋 I’m your Benefits Coach! Ready to explore the best plans for you?"}
+        {"role": "bot", "text": "Hello 👋 I'm your Benefits Coach. Ask me about health, insurance, or plan recommendations!"}
     ]
 
-user_input = st.text_input("You:", placeholder="Type something like 'recommend a plan'...")
+user_input = st.text_input("You:", placeholder="Ask something like 'Which plan is good for families?'")
 
+# --- Demo Chat Logic ---
+def get_demo_reply(text):
+    text = text.lower()
+    if "recommend" in text or "best" in text or "choose" in text:
+        if risk == "Low":
+            return "Based on your **Low risk tolerance**, I recommend **Plan A (Low Cost)** — minimal coverage, minimal cost."
+        elif risk == "Medium":
+            return "For your **Medium risk tolerance**, **Plan B (Balanced)** is a great choice — balanced coverage and cost."
+        else:
+            return "With your **High risk tolerance**, you should explore **Plan C (Comprehensive)** — premium coverage, full protection."
+    elif "cost" in text or "price" in text:
+        return "💲 Plan A: $150/month | Plan B: $250/month | Plan C: $400/month."
+    elif "health" in text or "insurance" in text:
+        return "Health insurance covers doctor visits, hospitalization, and preventive care. Want to compare plans?"
+    elif "family" in text:
+        return "For families, **Plan C** is usually preferred — it includes wider coverage for dependents."
+    elif "hello" in text or "hi" in text:
+        return "👋 Hi there! I'm here to help you navigate your benefits easily."
+    else:
+        return "🤔 Sorry, I don’t have an answer for that — but you can ask about plan cost, recommendation, or coverage!"
+
+# --- Chat Handling ---
 if user_input:
     st.session_state.chat_history.append({"role": "user", "text": user_input})
+    reply = get_demo_reply(user_input)
+    st.session_state.chat_history.append({"role": "bot", "text": reply})
 
-    if "recommend" in user_input.lower():
-        if risk == "Low":
-            plan = "Plan A (Low Cost)"
-            desc = "Ideal for those who rarely visit doctors. Keeps monthly costs minimal."
-        elif risk == "Medium":
-            plan = "Plan B (Balanced)"
-            desc = "Best for moderate medical needs and balanced cost coverage."
-        else:
-            plan = "Plan C (Comprehensive)"
-            desc = "Top-tier coverage for families or high medical usage."
-        response = f"I recommend **{plan}**.\n\n{desc}"
-    elif "cost" in user_input.lower():
-        response = "Here’s a quick comparison:\n\n- Plan A: $150/month\n- Plan B: $250/month\n- Plan C: $400/month"
-    else:
-        response = "Try asking me things like: 'Show me plan options' or 'Which is best for a family with kids?'"
-    
-    st.session_state.chat_history.append({"role": "bot", "text": response})
-
-# Display chat bubbles
+# --- Display Chat History ---
 for msg in st.session_state.chat_history:
     if msg["role"] == "bot":
-        st.markdown(f"<div class='chat-bubble-bot'>💬 <b>Coach:</b> {msg['text']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble-bot'><b>Coach:</b> {msg['text']}</div>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div class='chat-bubble-user'>🧑 <b>You:</b> {msg['text']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble-user'><b>You:</b> {msg['text']}</div>", unsafe_allow_html=True)
 
-# ---- PLAN SIMULATION ----
+# -------------------- PLAN SIMULATION --------------------
 st.subheader("📊 Plan Comparison Simulator")
 
 data = pd.DataFrame({
@@ -174,23 +135,40 @@ data = pd.DataFrame({
 st.dataframe(data)
 st.bar_chart(data.set_index("Plan")["Monthly Cost"])
 
-# ---- LEARNING CENTER ----
+# -------------------- LEARNING CENTER --------------------
 with st.expander("📘 Learn About Each Benefit"):
     st.markdown("""
     **Health Insurance:** Covers doctor visits, hospitalization, and preventive care.  
-    **Life Insurance:** Supports your family in case of unforeseen events.  
-    **Dental & Vision:** Optional add-ons for extended care.  
-    **FSA (Flexible Spending Account):** Tax-advantaged savings for health expenses.
+    **Life Insurance:** Protects your family financially in case of unexpected events.  
+    **Dental & Vision:** Optional add-ons for dental and eye care.  
+    **FSA (Flexible Spending Account):** Save pre-tax money for health expenses.
     """)
 
-# ---- SUMMARY SECTION ----
+# -------------------- AUTO PLAN RECOMMENDATION LOGIC --------------------
+def recommend_plan_auto(risk_level, income_level):
+    if risk_level == "Low":
+        if income_level < 4000:
+            return "Plan A (Low Cost)"
+        else:
+            return "Plan B (Balanced)"
+    elif risk_level == "Medium":
+        if income_level < 5000:
+            return "Plan B (Balanced)"
+        else:
+            return "Plan C (Comprehensive)"
+    else:  # High risk
+        return "Plan C (Comprehensive)"
+
+recommended_plan = recommend_plan_auto(risk, income)
+
+# -------------------- SUMMARY SECTION --------------------
 st.subheader("📝 Personalized Summary Sheet (Demo)")
 
 summary = f"""
 ### Benefits Summary for {family} ({age} years old)
-- Risk Tolerance: {risk}
-- Monthly Income: ${income}
-- Recommended Plan: {plan if 'plan' in locals() else '—'}
+- **Risk Tolerance:** {risk}
+- **Monthly Income:** ${income}
+- **Recommended Plan:** {recommended_plan}
 """
 
 st.markdown(summary)
